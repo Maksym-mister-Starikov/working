@@ -3,37 +3,46 @@
 class WorkController {
 
     public function actionGetFiles() {
+        //проверка на отправку документа
         if (!isset($_POST['submit'])) {
-            
+            goto end;
         }
+        //проверка на существование файла
         if (!file_exists($_FILES["images"]["tmp_name"])) {
             echo '<h1>File not Found</h1>';
+            goto end;
         }
-
+        //проверяем формат файла
+        $name = $_FILES['images']['name'];
+        $parent = '/(.csv)/';
+        if (!preg_match($parent, $name) == TRUE) {
+            echo '<h1>Fail of the wrong format</h1>';
+            goto end;
+        }
+        //проверка на существования файла по умолчанию
         if (!file_exists('files/test.csv')) {
             $this->savefale();
         }
+        //вызов функции обработки файла
         $arr = $this->treatmentFile();
+        //вызов функции создания массива
         $finish = $this->readyArray($arr);
 
+        end:
+        //вывод в фаил
         require_once (ROOT . '/views/main.php');
         return TRUE;
     }
 
     public function savefale() {
-
-        $name = $_FILES['images']['name'];
-        $parent = '/(.csv)/';
-        if (!preg_match($parent, $name) == TRUE) {
-            echo '<h1>Fail of the wrong format</h1>';
-            return 0;
-        }
+        //проверяем на ошибки
         foreach ($_FILES["images"] as $key => $error) {
             if ($error == UPLOAD_ERR_OK) {
                 $tmp_name = $_FILES["images"]["tmp_name"];
                 // basename() может предотвратить атаку на файловую систему;
                 $name = basename($_FILES["images"]["name"]);
                 $upload_dir = (ROOT . '/files');
+                //сохраняем
                 move_uploaded_file($tmp_name, "$upload_dir/$name");
             }
         }
@@ -42,16 +51,15 @@ class WorkController {
     }
 
     public function treatmentFile() {
-        $name = $_FILES['images']['name'];
-        $parent = '/(.csv)/';
-        if (!preg_match($parent, $name) == TRUE) {
-            echo '<h1>Fail of the wrong format</h1>';
-        }
-
+        
+        //путь к файлу
         $path_file = $_FILES['images']['tmp_name'];
+        //передаем в функцию чтения из файла
         $arr = $this->bust($path_file);
+        //обрезаем заголовки колонок
         array_shift($arr);
-
+         
+        //записываем в фаил новые элементы
         if ($this->changeFile($arr) == 0) {
             $path_file = 'files/test.csv';
             $arr = $this->bust($path_file);
